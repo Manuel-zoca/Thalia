@@ -17,8 +17,8 @@ const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 const ADMIN_ID = 7398050896; // Thaila
 const DATA_FILE = path.join(__dirname, "contatos.json");
 const fotos = [
-  path.join(__dirname, "fotos", "thalia.JPG"),
-  path.join(__dirname, "fotos", "thalia2.PNG")
+  path.join(__dirname, "fotos", "thalia.jpg"),
+  path.join(__dirname, "fotos", "thalia2.png")
 ];
 const gifPath = path.join(__dirname, "fotos", "thalia3.mp4");
 
@@ -329,3 +329,4 @@ setInterval(() => dailyOrganizeAndNotify(), 24 * 60 * 60 * 1000);
 setInterval(() => enviarPromocao(), 6 * 60 * 60 * 1000);
 
 console.log("Bot iniciado com sucesso!");
+
