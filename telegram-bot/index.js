@@ -1,10 +1,4 @@
 // bot-thalia.js
-if (global.botThaliaInitialized) {
-  console.log("Bot já inicializado. Evitando duplicação.");
-  return;
-}
-global.botThaliaInitialized = true;
-
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const path = require("path");
@@ -32,15 +26,15 @@ if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, JSON.stringify({ user
 
 // Links de pagamento
 const PAYMENT_LINKS = {
-  "plano_usd_7d": "https://paypal.me/thaliatopai/6.99",
-  "plano_usd_15d": "https://paypal.me/thaliatopai/12.99",
-  "plano_usd_vita": "https://paypal.me/thaliatopai/20",
-  "plano_brl_7d": "https://paypal.me/thaliatopai/10",
-  "plano_brl_15d": "https://paypal.me/thaliatopai/20",
-  "plano_brl_vita": "https://paypal.me/thaliatopai/49.9",
-  "plano_eur_7d": "https://paypal.me/thaliatopai/6.5",
-  "plano_eur_15d": "https://paypal.me/thaliatopai/11.99",
-  "plano_eur_vita": "https://paypal.me/thaliatopai/18",
+  "plano_usd_7d": "https://paypal.me/thaliatopai/6.99   ",
+  "plano_usd_15d": "https://paypal.me/thaliatopai/12.99   ",
+  "plano_usd_vita": "https://paypal.me/thaliatopai/20   ",
+  "plano_brl_7d": "https://paypal.me/thaliatopai/10   ",
+  "plano_brl_15d": "https://paypal.me/thaliatopai/20   ",
+  "plano_brl_vita": "https://paypal.me/thaliatopai/49.9   ",
+  "plano_eur_7d": "https://paypal.me/thaliatopai/6.5   ",
+  "plano_eur_15d": "https://paypal.me/thaliatopai/11.99   ",
+  "plano_eur_vita": "https://paypal.me/thaliatopai/18   ",
 };
 
 // Legível para mensagens
@@ -172,7 +166,7 @@ async function broadcastPromo(priceAmount, promoTitle, promoDetails) {
   const data = readData();
   const users = data.users;
   const amount = priceAmount;
-  const paypalLink = `https://paypal.me/thaliatopai/${amount}`;
+  const paypalLink = `   https://paypal.me/thaliatopai/   ${amount}`;
   const promoText = `🔥 Promoção quente, meu amor! 🔥\n📸 ${promoTitle}\n💵 Preço: ${amount}\n✨ ${promoDetails} 😍`;
 
   const keyboard = {
@@ -289,7 +283,7 @@ bot.on("callback_query", async (query) => {
       await bot.sendMessage(chatId, `💳 Pagamento aqui:\n👉 ${link}\n📸 Depois envie o comprovante para eu liberar você 😘`);
     } else {
       const num = (data.match(/(\d+(\.\d+)?)/) || [null, ""])[1];
-      const paypal = num ? `https://paypal.me/thaliatopai/${num}` : "https://paypal.me/thaliatopai";
+      const paypal = num ? `https://paypal.me/thaliatopai/   ${num}` : "https://paypal.me/thaliatopai   ";
       await bot.sendMessage(chatId, `${confirmText}\n💳 Pagamento: ${paypal}`);
     }
     bot.sendMessage(ADMIN_ID, `💌 ${fromUsername} (ID: ${chatId}) escolheu: ${data}`);
@@ -322,4 +316,4 @@ bot.onText(/\/promo$/, () => enviarPromocao());
 setInterval(() => dailyOrganizeAndNotify(), 24 * 60 * 60 * 1000);
 setInterval(enviarPromocao, 6 * 60 * 60 * 1000);
 
-console.log("Bot iniciado com sucesso!");
+console.log("Bot iniciado com sucesso!");  
