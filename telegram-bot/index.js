@@ -1,4 +1,10 @@
 // bot-thalia.js
+if (global.botThaliaInitialized) {
+  console.log("Bot já inicializado. Evitando duplicação.");
+  return;
+}
+global.botThaliaInitialized = true;
+
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const path = require("path");
