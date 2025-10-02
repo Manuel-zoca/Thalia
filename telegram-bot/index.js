@@ -26,15 +26,15 @@ if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, JSON.stringify({ user
 
 // Links de pagamento
 const PAYMENT_LINKS = {
-  "plano_usd_7d": "https://paypal.me/thaliatopai/6.99   ",
-  "plano_usd_15d": "https://paypal.me/thaliatopai/12.99   ",
-  "plano_usd_vita": "https://paypal.me/thaliatopai/20   ",
-  "plano_brl_7d": "https://paypal.me/thaliatopai/10   ",
-  "plano_brl_15d": "https://paypal.me/thaliatopai/20   ",
-  "plano_brl_vita": "https://paypal.me/thaliatopai/49.9   ",
-  "plano_eur_7d": "https://paypal.me/thaliatopai/6.5   ",
-  "plano_eur_15d": "https://paypal.me/thaliatopai/11.99   ",
-  "plano_eur_vita": "https://paypal.me/thaliatopai/18   ",
+  "plano_usd_7d": "https://paypal.me/thaliatopai/6.99",
+  "plano_usd_15d": "https://paypal.me/thaliatopai/12.99",
+  "plano_usd_vita": "https://paypal.me/thaliatopai/20",
+  "plano_brl_7d": "https://paypal.me/thaliatopai/10",
+  "plano_brl_15d": "https://paypal.me/thaliatopai/20",
+  "plano_brl_vita": "https://paypal.me/thaliatopai/49.9",
+  "plano_eur_7d": "https://paypal.me/thaliatopai/6.5",
+  "plano_eur_15d": "https://paypal.me/thaliatopai/11.99",
+  "plano_eur_vita": "https://paypal.me/thaliatopai/18",
 };
 
 // Legível para mensagens
@@ -52,6 +52,7 @@ const PRICE_LABELS = {
 
 // Cache timers
 const inactivityTimers = {};
+const lastPromoSent = {}; // controle envio para evitar spam
 
 // ===== FUNÇÕES AUXILIARES =====
 function readData() {
@@ -166,21 +167,26 @@ async function broadcastPromo(priceAmount, promoTitle, promoDetails) {
   const data = readData();
   const users = data.users;
   const amount = priceAmount;
-  const paypalLink = `   https://paypal.me/thaliatopai/   ${amount}`;
+  const paypalLink = `https://paypal.me/thaliatopai/${amount}`;
   const promoText = `🔥 Promoção quente, meu amor! 🔥\n📸 ${promoTitle}\n💵 Preço: ${amount}\n✨ ${promoDetails} 😍`;
-
   const keyboard = {
     reply_markup: { inline_keyboard: [[{ text: `Comprar — ${promoTitle} — ${amount}`, url: paypalLink }]] }
   };
 
   for (const u of users) {
     try {
+      // Evita enviar promo repetida se já enviou nas últimas 6 horas
+      const lastSent = lastPromoSent[u.chatId];
+      const now = Date.now();
+      if (lastSent && now - lastSent < 6 * 60 * 60 * 1000) continue;
+
       if (fotos.length > 0) {
         const mediaGroup = fotos.filter(f => fs.existsSync(f)).map(f => ({ type: "photo", media: f }));
         if (mediaGroup.length > 0) await bot.sendMediaGroup(u.chatId, mediaGroup);
       }
       await bot.sendMessage(u.chatId, promoText, keyboard);
       resetInactivityTimer(u.chatId);
+      lastPromoSent[u.chatId] = now; // marca como enviado
     } catch (e) {
       console.error(`Erro ao enviar promo para ${u.chatId}:`, e.message || e);
     }
@@ -283,7 +289,7 @@ bot.on("callback_query", async (query) => {
       await bot.sendMessage(chatId, `💳 Pagamento aqui:\n👉 ${link}\n📸 Depois envie o comprovante para eu liberar você 😘`);
     } else {
       const num = (data.match(/(\d+(\.\d+)?)/) || [null, ""])[1];
-      const paypal = num ? `https://paypal.me/thaliatopai/   ${num}` : "https://paypal.me/thaliatopai   ";
+      const paypal = num ? `https://paypal.me/thaliatopai/${num}` : "https://paypal.me/thaliatopai";
       await bot.sendMessage(chatId, `${confirmText}\n💳 Pagamento: ${paypal}`);
     }
     bot.sendMessage(ADMIN_ID, `💌 ${fromUsername} (ID: ${chatId}) escolheu: ${data}`);
@@ -294,26 +300,32 @@ bot.on("callback_query", async (query) => {
   await bot.sendMessage(chatId, "Recebi sua ação 😘");
 });
 
-// ===== PROMOÇÃO AUTOMÁTICA =====
-function enviarPromocao() {
+// ===== PROMOÇÃO AUTOMÁTICA =====    6730
+async function enviarPromocao() {
   const data = readData();
-  data.users.forEach(async u => {
-    if (!u.paid) {
-      try {
-        if (fotos.length > 0) {
-          const mediaGroup = fotos.filter(f => fs.existsSync(f)).map(f => ({ type: "photo", media: f }));
-          if (mediaGroup.length > 0) await bot.sendMediaGroup(u.chatId, mediaGroup);
-        }
-        await bot.sendMessage(u.chatId, "💖 Olá amorzinho! Tem novidades quentes no meu VIP 🔥😏. Aproveita para garantir seu acesso agora 💕");
-      } catch { }
-    }
-  });
+  const now = Date.now();
+
+  for (const u of data.users) {
+    try {
+      if (u.paid) continue; // não enviar para pagantes
+      const lastSent = lastPromoSent[u.chatId];
+      if (lastSent && now - lastSent < 6 * 60 * 60 * 1000) continue; // 6h de cooldown
+
+      if (fotos.length > 0) {
+        const mediaGroup = fotos.filter(f => fs.existsSync(f)).map(f => ({ type: "photo", media: f }));
+        if (mediaGroup.length > 0) await bot.sendMediaGroup(u.chatId, mediaGroup);
+      }
+
+      await bot.sendMessage(u.chatId, "💖 Olá amorzinho! Tem novidades quentes no meu VIP 🔥😏. Aproveita para garantir seu acesso agora 💕");
+      lastPromoSent[u.chatId] = now;
+    } catch { }
+  }
 }
 
 bot.onText(/\/promo$/, () => enviarPromocao());
 
 // ===== INTERVALOS =====
 setInterval(() => dailyOrganizeAndNotify(), 24 * 60 * 60 * 1000);
-setInterval(enviarPromocao, 6 * 60 * 60 * 1000);
+setInterval(() => enviarPromocao(), 6 * 60 * 60 * 1000);
 
-console.log("Bot iniciado com sucesso!");  
+console.log("Bot iniciado com sucesso!");
